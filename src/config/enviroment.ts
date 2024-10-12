@@ -1,7 +1,9 @@
 import 'dotenv/config'
 
+
+
 export const CONFIG={
-    db:process.env.DB,
+    db:process.env.DBT,
     jwt_private:`-----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAyB9J3dWEsCjDRYm8yNJgTR7+n6N2gtUWL2brTxreCCwKLcEn
 oXeGAM4ITp5Ylw+TZtUOrf5t031CtxWM9kmhb05mN/zX8j97OjNarQV/04Mqu/lG
