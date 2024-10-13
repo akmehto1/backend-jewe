@@ -72,6 +72,8 @@ const Commission = async (req:any, resp: Response) => {
   }
 };
 
+
+
 const getDownline:any = async (userId: string) => {
   // Find all users referred by the current user (direct downline)
   const downlineMembers = await User.find({ referredBy: userId });
@@ -328,13 +330,12 @@ const userJustOneLevelDown=async(req:any,resp:Response)=>{
   const id=req.user._id;
 
   try{
-    const allUser=await User.find({referredBy:id}).select('-referredBy -last_active -_id -password -phone -role -level -userRefferalId -createdAt -updatedAt -isCheckedTC');
+    const allUser=await User.find({referredBy:id}).select('-referredBy -last_active -_id -password -role -level -userRefferalId  -updatedAt -isCheckedTC');
     console.log(allUser);
 
     if(allUser.length==0)return resp.status(200).json({success:false,message:"No user found"});
  
     return resp.status(200).json({success:false,allUser:allUser});
-
   }catch(error:any){
     return resp.status(404).json({success:false,message:error.message});
   }

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { Request, Response } from "express";
-import { adminloginController, getAllUserData,getUserDetailsByIdController,recentJoinUser} from "../../controllers/admin.controllers";
+import { adminloginController, dashboard, getAllUserData,getUserDetailsByIdController,recentJoinUser} from "../../controllers/admin.controllers";
 import { isAdmin } from "../../middlware/isAdmin";
 
 
@@ -12,6 +12,7 @@ AdminRouter.post("/auth/log-in",adminloginController);
 AdminRouter.get('/all-user-data',isAdmin,getAllUserData);
 AdminRouter.get('/recent-join-user',isAdmin,recentJoinUser);
 AdminRouter.get('/user/:id/details',isAdmin,getUserDetailsByIdController);
+AdminRouter.get('/dashboard',isAdmin,dashboard);
 
 
  

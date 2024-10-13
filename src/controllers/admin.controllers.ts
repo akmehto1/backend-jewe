@@ -7,6 +7,7 @@ import { logger } from "../utlis/logger";
 import { validateUserLoginSchema } from "../validtion/user/user.validation";
 import express, { Request, response, Response } from "express";
 import Plan from "../models/plan/plan";
+import Transaction from "../models/transactions/transaction.model";
 
 const adminloginController = async (req: Request, resp: Response) => {
   // Schema validation
@@ -34,11 +35,12 @@ const adminloginController = async (req: Request, resp: Response) => {
         .json({ success: false, message: "Admin not found" });
     }
 
-    // Check password
-    // const isPasswordValid = await comparePassword(loginSchemaValidationResult.value.password, user.password);
-    // if (!isPasswordValid) {
-    //     return resp.status(403).json({ success: false, message: "admin Incorrect password" });
-    // }
+
+   
+    const isPasswordValid = await comparePassword(loginSchemaValidationResult.value.password, user.password);
+    if (!isPasswordValid) {
+        return resp.status(403).json({ success: false, message: "admin Incorrect password" });
+    }
 
     // Create session
     const accessToken = signJWT({ ...user }, { expiresIn: "1d" });
@@ -61,12 +63,17 @@ const adminloginController = async (req: Request, resp: Response) => {
 };
 
 
+
+
+
+
+
 const getAllUserData = async (
   req: Request,
   resp: Response
 ): Promise<Response> => {
   try {
-    // Parse query parameters with proper type casting
+    // Parse query parameters
     const page: number = parseInt(req.query.page as string) || 0;
     const limit: number = parseInt(req.query.limit as string) || 10;
     const sort: string = (req.query.sort as string) || "_id";
@@ -75,14 +82,15 @@ const getAllUserData = async (
     const search: string = (req.query.search as string) || "";
     const day: string = req.query.day as string || ''; // Date filter
 
-    // Create a filter object
+    // Build the query object
     let query: any = {};
 
-    // If there's a filter or search term, add conditions to the query
+    // Add filter condition
     if (filter) {
-      query.date= filter; // Example: filter by user role
+      query.role = filter; // Assuming `role` is the filter condition
     }
 
+    // Add search condition
     if (search) {
       query.$or = [
         { firstName: { $regex: search, $options: "i" } }, // Case-insensitive search
@@ -91,31 +99,33 @@ const getAllUserData = async (
       ];
     }
 
-
+    // Date filter condition
     if (day) {
-        const startOfDay = new Date(day);
-        const endOfDay = new Date(startOfDay);
-     
-        endOfDay.setUTCHours(23, 59, 59, 999); // Set to the end of the day in UTC
+      const startOfDay = new Date(day);
+      const endOfDay = new Date(startOfDay);
+      endOfDay.setUTCHours(23, 59, 59, 999); // Set to the end of the day
 
-        query.createdAt = {
-          $gte: startOfDay,
-          $lt: endOfDay
-        };
-      }
-      
+      query.createdAt = {
+        $gte: startOfDay,
+        $lt: endOfDay
+      };
+    }
 
-    // Find all users, apply the query, sort, and pagination
+    // Find all users based on the query, apply sort, pagination, and populate userRefferalId
     const allUserData = await User.find(query)
-      .sort({ [sort]: -1 }) // Sort by specified field
+      .sort({ [sort]: -1 }) // Apply sorting
       .skip(page * limit) // Pagination
       .limit(limit)
-      .select("-password -_id -email"); // Exclude certain fields
+      .select('-password -email') // Exclude sensitive fields
+      .populate({
+        path: 'referredBy', // Assuming the referral is stored in `referredBy`
+        select: 'userRefferalId', // Fetch only the `userRefferalId` field from the referred user
+      });
 
-    // Get total count for pagination
+    // Get total count of matching users for pagination
     const totalUsers: number = await User.countDocuments(query);
 
-    // Return the response with user data and pagination info
+    // Return the response with user data and pagination details
     return resp.status(200).json({
       success: true,
       message: "All user data",
@@ -130,7 +140,7 @@ const getAllUserData = async (
   } catch (error) {
     console.error("Error fetching user data:", error);
 
-    // Handle any errors and return a 500 Internal Server Error
+    // Handle errors and return a 500 status
     return resp.status(500).json({
       success: false,
       message: "Failed to fetch user data",
@@ -194,6 +204,8 @@ const getUserDetailsByIdController = async (req: Request, res: Response) => {
       .json({ success: false, message: "Internal server error" });
   }
 };
+
+
 
 
 
@@ -285,9 +297,78 @@ const calculateCommission = async (userId:any) => {
 
 
 
+
+const getTotalUsers = async (): Promise<number> => {
+  try {
+    const totalUsers: number = await User.countDocuments({});
+    console.log('Total number of users:', totalUsers);
+    return totalUsers;
+  } catch (err) {
+    console.error('Error fetching user count:', err);
+    throw err;
+  }
+};
+
+
+
+const getTotalTransactionAmount = async () => {
+  try {
+    const result = await Transaction.aggregate([
+      {
+        $group: {
+          _id: null, // Grouping by null means we want the sum of all documents
+          totalAmount: { $sum: "$amount" } // Summing the 'amount' field
+        }
+      }
+    ]);
+
+    // Check if result contains totalAmount
+    const totalAmount = result.length > 0 ? result[0].totalAmount : 0;
+    console.log('Total transaction amount:', totalAmount);
+    return totalAmount;
+  } catch (err) {
+    console.error('Error calculating total transaction amount:', err);
+    throw err;
+  }
+};
+
+
+// const getTotalbut=()=>{
+//   try {
+//     const getTotalbut = await Plan.find({}).sort({ createdAt: -1 }).limit(1);
+
+//   }catch(error){}
+// }
+
+
+
+
+
+const dashboard=async(req:Request,resp:Response)=>{
+  console.log("dashboard");
+    
+  
+
+   try {
+    
+    var totalUsers=await getTotalUsers();
+    var totalTransaction=await getTotalTransactionAmount();
+
+    return resp.status(200).json({success:true,totalUsers:totalUsers,totalTransactionAmount:totalTransaction});
+
+   } catch (error:any) {
+    return resp.status(400).json({success:false,message:error.message});
+   }
+
+
+
+}
+
+
 export {
   adminloginController,
   getAllUserData,
   recentJoinUser,
   getUserDetailsByIdController,
+  dashboard
 };
