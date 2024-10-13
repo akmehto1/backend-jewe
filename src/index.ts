@@ -17,8 +17,8 @@ app.use(cookieParser());
 
 // Apply CORS middleware before any routes or other middleware
 app.use(cors({
-  origin: 'http://localhost:5173', // Allow requests from frontend
-  credentials: true, // Allow cookies to be sent with requests
+  origin: '*', 
+  credentials: true
 }));
 
 app.use(express.json());
