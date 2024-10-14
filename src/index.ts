@@ -17,7 +17,7 @@ app.use(cookieParser());
 
 // Apply CORS middleware before any routes or other middleware
 app.use(cors({
-  origin: '*', 
+  origin: 'https://frontend-jewe-5.onrender.com',
   credentials: true
 }));
 
